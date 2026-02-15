@@ -381,7 +381,8 @@ enum ggml_status ggml_backend_graph_compute(ggml_backend_t backend, struct ggml_
 
 enum ggml_status ggml_backend_graph_compute_async(ggml_backend_t backend, struct ggml_cgraph * cgraph, int batch_size) {
     GGML_ASSERT(backend);
-    return backend->iface.graph_compute(backend, cgraph, batch_size);
+    (void)batch_size; // batch_size is deprecated, kept for API compatibility
+    return backend->iface.graph_compute(backend, cgraph);
 }
 
 bool ggml_backend_supports_op(ggml_backend_t backend, const struct ggml_tensor * op) {
