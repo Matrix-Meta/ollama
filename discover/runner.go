@@ -117,8 +117,14 @@ func GPUDevices(ctx context.Context, runners []ml.FilteredRunnerDiscovery) []ml.
 			ctx1stPass, cancel := context.WithTimeout(ctx, bootstrapTimeout)
 			defer cancel()
 
+			// Pass through SYCL environment variable to runner
+			extraEnvs := make(map[string]string)
+			if os.Getenv("OLLAMA_SYCL") != "" {
+				extraEnvs["OLLAMA_SYCL"] = os.Getenv("OLLAMA_SYCL")
+			}
+
 			// For this pass, we retain duplicates in case any are incompatible with some libraries
-			devices = append(devices, bootstrapDevices(ctx1stPass, dirs, nil)...)
+			devices = append(devices, bootstrapDevices(ctx1stPass, dirs, extraEnvs)...)
 		}
 
 		// In the second pass, we more deeply initialize the GPUs to weed out devices that
@@ -152,6 +158,10 @@ func GPUDevices(ctx context.Context, runners []ml.FilteredRunnerDiscovery) []ml.
 				defer wg.Done()
 				extraEnvs := ml.GetVisibleDevicesEnv(devices[i:i+1], true)
 				devices[i].AddInitValidation(extraEnvs)
+				// Pass through SYCL environment variable to runner
+				if os.Getenv("OLLAMA_SYCL") != "" {
+					extraEnvs["OLLAMA_SYCL"] = os.Getenv("OLLAMA_SYCL")
+				}
 				if len(bootstrapDevices(ctx2ndPass, devices[i].LibraryPath, extraEnvs)) == 0 {
 					slog.Debug("filtering device which didn't fully initialize",
 						"id", devices[i].ID,
