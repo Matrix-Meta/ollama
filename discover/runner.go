@@ -378,6 +378,24 @@ func GPUDevices(ctx context.Context, runners []ml.FilteredRunnerDiscovery) []ml.
 			backend = strings.Join(backendList, ",")
 		}
 	}
+
+	// Phase 2: Add fallback logic for SYCL
+	// If SYCL is enabled but no SYCL devices found, log warning
+	if envconfig.EnableSYCL() {
+		hasSycl := false
+		for _, d := range devices {
+			if strings.Contains(strings.ToLower(d.Library), "sycl") {
+				hasSycl = true
+				break
+			}
+		}
+		if !hasSycl && len(devices) > 0 {
+			slog.Warn("SYCL enabled but no SYCL devices found, using available backends", "available", backend)
+		} else if !hasSycl && len(devices) == 0 {
+			slog.Warn("SYCL enabled but no GPU devices found, falling back to CPU")
+		}
+	}
+
 	slog.Info("selected backend", "backend", backend)
 
 	return append([]ml.DeviceInfo{}, devices...)

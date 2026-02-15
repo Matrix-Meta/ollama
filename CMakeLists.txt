@@ -181,6 +181,14 @@ endif()
 option(MLX_ENGINE "Enable MLX backend" OFF)
 option(OLLAMA_EXPERIMENTAL_SYCL "Enable experimental SYCL backend for Intel GPUs" OFF)
 
+if(OLLAMA_EXPERIMENTAL_SYCL)
+    message(STATUS "SYCL support enabled (experimental)")
+    message(STATUS "Note: Requires Intel oneAPI toolkit installed and sourced:")
+    message(STATUS "  source /opt/intel/oneapi/setvars.sh")
+    # SYCL backend will be added when ggml-sycl is available in ggml
+    # For now, this enables the runtime detection logic
+endif()
+
 if(MLX_ENGINE)
     message(STATUS "Setting up MLX (this takes a while...)")
     add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/x/imagegen/mlx)
