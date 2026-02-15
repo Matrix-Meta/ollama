@@ -105,6 +105,9 @@ func GPUDevices(ctx context.Context, runners []ml.FilteredRunnerDiscovery) []ml.
 				} else if !envconfig.EnableVulkan() && strings.Contains(filepath.Base(dir), "vulkan") {
 					slog.Info("experimental Vulkan support disabled.  To enable, set OLLAMA_VULKAN=1")
 					continue
+				} else if !envconfig.EnableSYCL() && strings.Contains(filepath.Base(dir), "sycl") {
+					slog.Info("experimental SYCL support disabled.  To enable, set OLLAMA_SYCL=1")
+					continue
 				}
 				dirs = []string{ml.LibOllamaPath, dir}
 			} else {
@@ -357,6 +360,25 @@ func GPUDevices(ctx context.Context, runners []ml.FilteredRunnerDiscovery) []ml.
 			}
 		}
 	}
+
+	// Log selected backend for debugging
+	backend := "cpu"
+	if len(devices) > 0 {
+		backends := make(map[string]bool)
+		for _, d := range devices {
+			if d.Library != "" {
+				backends[d.Library] = true
+			}
+		}
+		if len(backends) > 0 {
+			backendList := make([]string, 0, len(backends))
+			for b := range backends {
+				backendList = append(backendList, b)
+			}
+			backend = strings.Join(backendList, ",")
+		}
+	}
+	slog.Info("selected backend", "backend", backend)
 
 	return append([]ml.DeviceInfo{}, devices...)
 }

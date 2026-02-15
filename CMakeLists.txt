@@ -179,6 +179,7 @@ if(NOT APPLE)
 endif()
 
 option(MLX_ENGINE "Enable MLX backend" OFF)
+option(OLLAMA_EXPERIMENTAL_SYCL "Enable experimental SYCL backend for Intel GPUs" OFF)
 
 if(MLX_ENGINE)
     message(STATUS "Setting up MLX (this takes a while...)")

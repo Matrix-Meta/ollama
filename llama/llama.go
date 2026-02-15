@@ -4,12 +4,13 @@ package llama
 #cgo CFLAGS: -std=c11
 #cgo windows CFLAGS: -Wno-dll-attribute-on-redeclaration
 #cgo CXXFLAGS: -std=c++17
-#cgo CPPFLAGS: -I${SRCDIR}/llama.cpp/include
-#cgo CPPFLAGS: -I${SRCDIR}/llama.cpp/common
-#cgo CPPFLAGS: -I${SRCDIR}/llama.cpp/vendor
-#cgo CPPFLAGS: -I${SRCDIR}/llama.cpp/tools/mtmd
-#cgo CPPFLAGS: -I${SRCDIR}/llama.cpp/src
+#cgo CPPFLAGS: -I${SRCDIR}/../third_party/llama.cpp/include
+#cgo CPPFLAGS: -I${SRCDIR}/../third_party/llama.cpp/common
+#cgo CPPFLAGS: -I${SRCDIR}/../third_party/llama.cpp/vendor
+#cgo CPPFLAGS: -I${SRCDIR}/../third_party/llama.cpp/tools/mtmd
+#cgo CPPFLAGS: -I${SRCDIR}/../third_party/llama.cpp/src
 #cgo CPPFLAGS: -I${SRCDIR}/../ml/backend/ggml/ggml/include
+#cgo CPPFLAGS: -I${SRCDIR}
 
 #include <stdlib.h>
 #include "ggml.h"
@@ -19,6 +20,8 @@ package llama
 #include "gguf.h"
 
 #include "sampling_ext.h"
+#include "llama_ext.h"
+#include "mtmd_ext.h"
 
 extern bool llamaProgressCallback(float progress, void *user_data);
 extern void llamaLog(int level, char* text, void* user_data);
@@ -39,10 +42,6 @@ import (
 	"sync"
 	"unsafe"
 
-	_ "github.com/ollama/ollama/llama/llama.cpp/common"
-	_ "github.com/ollama/ollama/llama/llama.cpp/src"
-	_ "github.com/ollama/ollama/llama/llama.cpp/tools/mtmd"
-	_ "github.com/ollama/ollama/llama/llama.cpp/tools/mtmd/models"
 	"github.com/ollama/ollama/ml"
 	ggml "github.com/ollama/ollama/ml/backend/ggml/ggml/src"
 )
@@ -559,15 +558,15 @@ func (c *MtmdContext) MultimodalTokenize(llamaContext *Context, data []byte) ([]
 	defer C.mtmd_input_chunks_free(ic)
 
 	// Initialize an empty text prompt so we can tokenize
-	it := C.mtmd_input_text_init(C.mtmd_default_marker(), true, true)
-	defer C.mtmd_input_text_free(it)
+	it := C.mtmd_input_text_init_compat(C.mtmd_default_marker(), true, true)
+	defer C.mtmd_input_text_free_compat(it)
 
 	// Initialize a bitmap with the image data
 	bm := C.mtmd_helper_bitmap_init_from_buf(c.c, (*C.uchar)(unsafe.Pointer(&data[0])), C.size_t(len(data)))
 	defer C.mtmd_bitmap_free(bm)
 
 	// Tokenize the image
-	if C.int32_t(0) != C.mtmd_tokenize(c.c, ic, it, &bm, 1) {
+	if C.int32_t(0) != C.mtmd_tokenize_compat(c.c, ic, it, &bm, 1) {
 		return nil, errors.New("unable to tokenize mtmd embedding from image")
 	}
 	nChunks := C.mtmd_input_chunks_size(ic)
